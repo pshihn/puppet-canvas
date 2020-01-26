@@ -43,6 +43,8 @@ await close();
 To use external images in your canvas, first load the image using the `loadImage` method.
 
 ```javascript
+import { createCanvas, loadImage } from './puppet-canvas';
+
 const canvas = await createCanvas(400, 400);
 const ctx = await canvas.getContext('2d');
 const image = await loadImage('https://....', canvas);
