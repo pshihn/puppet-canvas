@@ -67,13 +67,13 @@ ctx.fillRect(20, 20, 200, 100);
 ```
 
 ## Implementation
-puppet-canvas creates an instance of a canvas on a puppeteer instance, and exposes the API via a JavaScript Proxy. 
+**puppet-canvas** creates a canvas on a puppeteer instance, and exposes the API via a JavaScript Proxy. 
 
 A side effect of this is that all calls, essentially become `async`. For normal drawing, one doesn't need to `await` each command unless a value is being returned.
 
 A *proxied* solution is somewhat better than alternate ones because, firstly, the rendering is exactly what the browser would have rendered (Chrome). Secondly, this is mostly future-proof since all methods are just proxied to the actual instance. So, any new API added to the Canvas, should automagically work. 
 
-**Implentation Shortcomings**
+#### Implentation Shortcomings
 
 Though a proxied implementation is simpler, smaller, and more flexible, it can be slower than alternative native implementations. For example, manipulating lots of pixels, one pixel at a time, may be slow and not recommended.
 
