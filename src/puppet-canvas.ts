@@ -1,4 +1,5 @@
-import puppeteer, { Browser, JSEvalable, SerializableOrJSHandle, ElementHandle, JSHandle } from 'puppeteer';
+import { JSEvalable, SerializableOrJSHandle, ElementHandle, JSHandle } from 'puppeteer';
+import { getBrowser, closeBrowser } from './brwoser';
 
 type PropName = string | number;
 
@@ -8,7 +9,7 @@ type OpType = 'GET' | 'SET' | 'APPLY';
 // along with any params needed to do so
 interface Op {
   type: OpType;
-  path?: string[];
+  path?: PropName[];
   value?: any;
   args?: SerializableOrJSHandle[];
 }
@@ -24,22 +25,6 @@ type ReferenceType = '_deferred_';
 interface DeferredReference {
   type: ReferenceType;
   id: string;
-}
-
-let _browser: Browser | null = null;
-
-async function getBrowser(): Promise<Browser> {
-  if (!_browser) {
-    _browser = await puppeteer.launch({ headless: false });
-  }
-  return _browser;
-}
-
-export async function close(): Promise<void> {
-  if (_browser) {
-    await _browser.close();
-    _browser = null;
-  }
 }
 
 function proxy<T>(handler: ProxyHandler, path: string[] = [], refId?: string): T {
@@ -102,7 +87,7 @@ function createHandler(canvasHandle: ElementHandle<HTMLCanvasElement>, proxyTarg
 
       // Execute in browser
       const target = proxyTarget || canvasHandle;
-      const result = await target.evaluate(async (jsTarget: any, canvasElement: HTMLCanvasElement, type: OpType, path: string[], value: any, ...args: SerializableOrJSHandle[]) => {
+      const result = await target.evaluate(async (jsTarget: any, canvasElement: HTMLCanvasElement, type: OpType, path: PropName[], value: any, ...args: SerializableOrJSHandle[]) => {
         // deref params
         const derefArg = (arg: any) => {
           if (arg && (typeof arg === 'object') && (arg as DeferredReference).type === '_deferred_') {
@@ -120,9 +105,8 @@ function createHandler(canvasHandle: ElementHandle<HTMLCanvasElement>, proxyTarg
             args[i] = derefArg(args[i]);
           }
         }
-        console.log({ jsTarget, canvasElement, type, path, value, args });
 
-        const reducePath = (list: string[]) => list.reduce<any>((o: any, prop) => (o ? o[prop] : o), jsTarget);
+        const reducePath = (list: PropName[]) => list.reduce<any>((o: any, prop) => (o ? o[prop] : o), jsTarget);
         const ref = reducePath(path);
         const refParent = reducePath(path.slice(0, -1));
         let out: any = null;
@@ -188,17 +172,7 @@ async function getHandlyByRefId(canvasHandle: ElementHandle<HTMLCanvasElement>, 
 const proxyMap = new Map<any, ElementHandle<HTMLCanvasElement>>();
 
 export async function createCanvas(width: number, height: number): Promise<HTMLCanvasElement> {
-  const html = `
-<html>
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-  </head>
-  <body>
-    <canvas width="${width}" height="${height}"></canvas>
-  </body>
-</html>
-`;
+  const html = `<canvas width="${width}" height="${height}"></canvas>`;
   const browser = await getBrowser();
   const page = await browser.newPage();
   await page.setContent(html);
@@ -231,4 +205,8 @@ export async function releaseCanvas(canvas: HTMLCanvasElement): Promise<void> {
       }
     });
   }
+}
+
+export async function close(): Promise<void> {
+  return closeBrowser();
 }
