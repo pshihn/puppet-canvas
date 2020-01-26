@@ -1,4 +1,4 @@
-import { JSEvalable, SerializableOrJSHandle, ElementHandle, JSHandle, Page } from 'puppeteer';
+import { JSEvalable, SerializableOrJSHandle, ElementHandle, JSHandle, Page, ScreenshotOptions } from 'puppeteer';
 import { getBrowser, closeBrowser } from './brwoser';
 
 type PropName = string | number;
@@ -209,6 +209,15 @@ async function initializeCanvas(canvasHandle: ElementHandle<HTMLCanvasElement>, 
     page
   });
   return p;
+}
+
+export async function screenshotCanvas(canvas: HTMLCanvasElement, options?: ScreenshotOptions): Promise<string | Buffer> {
+  if (proxyMap.has(canvas)) {
+    const canvasHandle = proxyMap.get(canvas)!.canvasHandle;
+    return canvasHandle.screenshot(options);
+  } else {
+    throw new Error('Canvas element not initialized as puppet-canvas');
+  }
 }
 
 export async function releaseCanvas(canvas: HTMLCanvasElement): Promise<void> {
