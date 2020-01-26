@@ -33,6 +33,8 @@ ctx.stroke();
 
 // Get the image as a data url
 const dataUrl = await canvas.toDataURL();
+
+// Clear
 await close();
 
 })();
