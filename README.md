@@ -13,7 +13,7 @@ $ npm install puppet-canvas --save
 Following example shows how to draw a house 
 
 ```javascript
-import { createCanvas } from './puppet-canvas';
+import { createCanvas, close } from './puppet-canvas';
 
 async(() => {
 
@@ -32,6 +32,7 @@ ctx.stroke();
 
 // Get the image as a data url
 const dataUrl = await canvas.toDataURL();
+await close();
 
 })();
 ```
@@ -71,3 +72,17 @@ A side effect of this is that all calls, essentially become `async`. For normal 
   
 Creates a canvas instance with the specified width and height (in pixels)
 
+#### linkCanvas(canvas: ElementHandle\<HTMLCanvasElement\>) => Promise\<HTMLCanvasElement\>
+
+Say, you want to use this with an existing instance of puppeteer, you can pass in the ElementHandle of the canvase in your page. 
+
+#### close() => Promise
+
+Close associated puppeteer instance. Usually called at the end.
+
+#### releaseCanvas(canvas: HTMLCanvasElement) => Promise
+
+Release the canvas instance, if you do not want puppet-canvas to proxy it anymore, but still want to keep the canvas instance around 
+
+## License
+[MIT License](https://github.com/pshihn/puppet-canvas/blob/master/LICENSE) (c) [Preet Shihn](https://twitter.com/preetster)
