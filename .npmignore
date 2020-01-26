@@ -1,0 +1,8 @@
+node_modules
+dist
+demo.ts
+demo.js
+demo.js.map
+demo.d.ts
+tsconfig.json
+tslint.json

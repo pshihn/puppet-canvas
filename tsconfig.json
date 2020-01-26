@@ -15,6 +15,7 @@
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
     "sourceMap": true,
+    "declaration": true,
     "paths": {
       "*": [
         "node_modules/*",
