@@ -10,7 +10,7 @@ $ npm install puppet-canvas --save
 
 ## Usage
 
-Following example shows how to draw a house 
+Following example draws a house and grabs the data url of the image.
 
 ```javascript
 import { createCanvas, close } from './puppet-canvas';
@@ -67,7 +67,23 @@ ctx.fillRect(20, 20, 200, 100);
 ## Implementation
 puppet-canvas creates an instance of a canvas on a puppeteer instance, and exposes the API via a JavaScript Proxy. 
 
-A side effect of this is that all calls, essentially become `async`. For normal drawing, one doesn't need to `await` each command unless a value is being read. 
+A side effect of this is that all calls, essentially become `async`. For normal drawing, one doesn't need to `await` each command unless a value is being returned.
+
+A *proxied* solution is somewhat better than alternate ones because, firstly, the rendering is exactly what the browser would have rendered (Chrome). Secondly, this is mostly future-proof since all methods are just proxied to the actual instance. So, any new API added to the Canvas, should automagically work. 
+
+**Implentation Shortcomings**
+
+Though a proxied implementation is simpler, smaller, and more flexible, it can be slower than alternative native implementations. For example, manipulating lots of pixels, one pixel at a time, may be slow and not recommended.
+
+The other shortcoming is from a dev experience, everything is an `async` call. So it creates more code for getting child object and properties. The following code:
+```javascript
+const imageDataLength = ctx.createImageData(10, 10).data.length;
+```
+has to be refactored as
+```javascript
+const imageData = await ctx.createImageData(10, 10);
+const imageDataLength = await (await imageData.data).length;
+```
 
 ## Full API
 
