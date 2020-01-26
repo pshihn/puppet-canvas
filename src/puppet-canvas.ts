@@ -1,4 +1,4 @@
-import { JSEvalable, SerializableOrJSHandle, ElementHandle, JSHandle } from 'puppeteer';
+import { JSEvalable, SerializableOrJSHandle, ElementHandle, JSHandle, Page } from 'puppeteer';
 import { getBrowser, closeBrowser } from './brwoser';
 
 type PropName = string | number;
@@ -169,8 +169,6 @@ async function getHandlyByRefId(canvasHandle: ElementHandle<HTMLCanvasElement>, 
   }, refId);
 }
 
-const proxyMap = new Map<any, ElementHandle<HTMLCanvasElement>>();
-
 export async function linkCanvas(canvas: ElementHandle<HTMLCanvasElement>): Promise<HTMLCanvasElement> {
   return initializeCanvas(canvas);
 }
@@ -182,13 +180,20 @@ export async function createCanvas(width: number, height: number): Promise<HTMLC
   await page.setContent(html);
   const canvasElement: ElementHandle<HTMLCanvasElement> | null = await page.$('canvas');
   if (canvasElement) {
-    return initializeCanvas(canvasElement);
+    return initializeCanvas(canvasElement, page);
   } else {
     throw new Error('Failed to initialize canvas in puppeteer');
   }
 }
 
-async function initializeCanvas(canvasHandle: ElementHandle<HTMLCanvasElement>): Promise<HTMLCanvasElement> {
+interface CanvasProxyMapRecord {
+  canvasHandle: ElementHandle<HTMLCanvasElement>;
+  page?: Page;
+}
+
+const proxyMap = new Map<HTMLCanvasElement, CanvasProxyMapRecord>();
+
+async function initializeCanvas(canvasHandle: ElementHandle<HTMLCanvasElement>, page?: Page): Promise<HTMLCanvasElement> {
   await canvasHandle.evaluate((canvas) => {
     const cw = self as any as CanvasWindow;
     if (!cw.$puppetCanvasMap) {
@@ -199,14 +204,17 @@ async function initializeCanvas(canvasHandle: ElementHandle<HTMLCanvasElement>):
     }
   });
   const p = proxy<HTMLCanvasElement>(createHandler(canvasHandle));
-  proxyMap.set(p, canvasHandle);
+  proxyMap.set(p, {
+    canvasHandle: canvasHandle,
+    page
+  });
   return p;
 }
 
 export async function releaseCanvas(canvas: HTMLCanvasElement): Promise<void> {
   if (proxyMap.has(canvas)) {
     const handle = proxyMap.get(canvas)!;
-    await handle.evaluate((canvas: HTMLCanvasElement) => {
+    await handle.canvasHandle.evaluate((canvas: HTMLCanvasElement) => {
       const cw = self as any as CanvasWindow;
       if (cw.$puppetCanvasMap) {
         cw.$puppetCanvasMap.delete(canvas);
@@ -217,4 +225,42 @@ export async function releaseCanvas(canvas: HTMLCanvasElement): Promise<void> {
 
 export async function close(): Promise<void> {
   return closeBrowser();
+}
+
+export async function loadImage(url: string, canvas: HTMLCanvasElement, page?: Page): Promise<HTMLImageElement> {
+  const cachedRecord = proxyMap.get(canvas);
+  const pageToUse = (cachedRecord && cachedRecord.page) || page;
+  if (pageToUse) {
+    const canvasHandle = cachedRecord!.canvasHandle;
+    const imageRef = await pageToUse.evaluate((canvasElement: HTMLCanvasElement, url: string) => {
+      return new Promise((resolve, reject) => {
+        const img = document.createElement('img');
+        img.onerror = () => reject(new Error('Image load error'));
+        img.onabort = () => reject(new Error('Image load aborted'));
+        img.onload = () => {
+          const cw = self as any as CanvasWindow;
+          const refMap = cw.$puppetCanvasMap.get(canvasElement);
+          if (refMap) {
+            const refId = `${Date.now()}-${Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)}`;
+            refMap.set(refId, img);
+            const defref: DeferredReference = {
+              id: refId,
+              type: '_deferred_'
+            };
+            resolve(defref);
+          }
+        };
+        img.src = url;
+      });
+    }, canvasHandle, url);
+    if (imageRef) {
+      const refId = (imageRef as DeferredReference).id;
+      const deferredHandle = await getHandlyByRefId(canvasHandle, refId);
+      return proxy(createHandler(canvasHandle, deferredHandle), [], refId);
+    } else {
+      throw new Error('Failed to load image');
+    }
+  } else {
+    throw new Error('No reference page found for this canvas');
+  }
 }
