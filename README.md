@@ -14,6 +14,7 @@ Following example shows how to draw a house
 
 ```javascript
 import { createCanvas, close } from './puppet-canvas';
+// OR const { createCanvas, close } = require('puppet-canvas')
 
 async(() => {
 
