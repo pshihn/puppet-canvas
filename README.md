@@ -13,7 +13,7 @@ $ npm install puppet-canvas --save
 Following example draws a house and grabs the data url of the image.
 
 ```javascript
-import { createCanvas, close } from './puppet-canvas';
+import { createCanvas, close } from 'puppet-canvas';
 // OR const { createCanvas, close } = require('puppet-canvas')
 
 async(() => {
@@ -45,7 +45,7 @@ await close();
 To use external images in your canvas, first load the image using the `loadImage` method.
 
 ```javascript
-import { createCanvas, loadImage } from './puppet-canvas';
+import { createCanvas, loadImage } from 'puppet-canvas';
 
 const canvas = await createCanvas(400, 400);
 const ctx = await canvas.getContext('2d');
