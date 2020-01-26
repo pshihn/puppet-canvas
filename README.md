@@ -105,5 +105,9 @@ Close associated puppeteer instance. Usually called at the end.
 
 Release the canvas instance, if you do not want puppet-canvas to proxy it anymore, but still want to keep the canvas instance around 
 
+#### screenshotCanvas(canvas: HTMLCanvasElement, options?: ScreenshotOptions) => Promise<string | Buffer>
+Take a screenshot of the canvas. The method optionally takes in `ScreenshotOptions` which are the same options as described in [Puppeteer screenshot method](https://pptr.dev/#?product=Puppeteer&version=v2.0.0&show=api-pagescreenshotoptions)
+
+
 ## License
 [MIT License](https://github.com/pshihn/puppet-canvas/blob/master/LICENSE) (c) [Preet Shihn](https://twitter.com/preetster)
