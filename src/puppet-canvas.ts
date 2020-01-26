@@ -171,17 +171,25 @@ async function getHandlyByRefId(canvasHandle: ElementHandle<HTMLCanvasElement>, 
 
 const proxyMap = new Map<any, ElementHandle<HTMLCanvasElement>>();
 
+export async function linkCanvas(canvas: ElementHandle<HTMLCanvasElement>): Promise<HTMLCanvasElement> {
+  return initializeCanvas(canvas);
+}
+
 export async function createCanvas(width: number, height: number): Promise<HTMLCanvasElement> {
   const html = `<canvas width="${width}" height="${height}"></canvas>`;
   const browser = await getBrowser();
   const page = await browser.newPage();
   await page.setContent(html);
-  const canvasElement = await page.$('canvas');
-  if (!canvasElement) {
+  const canvasElement: ElementHandle<HTMLCanvasElement> | null = await page.$('canvas');
+  if (canvasElement) {
+    return initializeCanvas(canvasElement);
+  } else {
     throw new Error('Failed to initialize canvas in puppeteer');
   }
-  // Initialize map to store object refs for this canvas
-  await page.evaluate((canvas) => {
+}
+
+async function initializeCanvas(canvasHandle: ElementHandle<HTMLCanvasElement>): Promise<HTMLCanvasElement> {
+  await canvasHandle.evaluate((canvas) => {
     const cw = self as any as CanvasWindow;
     if (!cw.$puppetCanvasMap) {
       cw.$puppetCanvasMap = new Map();
@@ -189,9 +197,9 @@ export async function createCanvas(width: number, height: number): Promise<HTMLC
     if (!cw.$puppetCanvasMap.has(canvas)) {
       cw.$puppetCanvasMap.set(canvas, new Map());
     }
-  }, canvasElement);
-  const p = proxy<HTMLCanvasElement>(createHandler(canvasElement));
-  proxyMap.set(p, canvasElement);
+  });
+  const p = proxy<HTMLCanvasElement>(createHandler(canvasHandle));
+  proxyMap.set(p, canvasHandle);
   return p;
 }
 

@@ -42,8 +42,8 @@ import { createCanvas, close } from './puppet-canvas';
     ctx.closePath();
     ctx.stroke();
 
-    // const dataUrl = await canvas.toDataURL();
-    // console.log(dataUrl);
+    const dataUrl = await canvas.toDataURL();
+    console.log(dataUrl);
   } catch (err) {
     console.error(err);
   }

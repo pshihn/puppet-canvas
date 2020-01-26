@@ -4,7 +4,7 @@ let _browser: Browser | null = null;
 
 export async function getBrowser(): Promise<Browser> {
   if (!_browser) {
-    _browser = await puppeteer.launch({ headless: false });
+    _browser = await puppeteer.launch({ headless: true });
   }
   return _browser;
 }
