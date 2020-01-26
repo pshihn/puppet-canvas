@@ -1,27 +1,26 @@
-import puppeteer, { Browser, JSEvalable, SerializableOrJSHandle } from 'puppeteer';
+import puppeteer, { Browser, JSEvalable, SerializableOrJSHandle, ElementHandle } from 'puppeteer';
 
+type PropName = string | number;
 type OpType = 'GET' | 'SET' | 'APPLY';
-
-interface NodeOp {
+interface Op {
   type: OpType;
   path?: string[];
   value?: any;
   args?: SerializableOrJSHandle[];
 }
-type ProxyHandler = (message: NodeOp) => Promise<any>;
-
-let _browser: Browser | null = null;
-
-async function getBrowser(): Promise<Browser> {
-  if (!_browser) {
-    _browser = await puppeteer.launch({ headless: false });
-  }
-  return _browser;
+type ProxyHandler = (message: Op) => Promise<any>;
+interface CanvasWindow {
+  $puppetCanvasMap: Map<HTMLCanvasElement, Map<string, any>>;
+}
+type ReferenceType = '_deferred_';
+interface DeferredReference {
+  type: ReferenceType;
+  id: string;
 }
 
 function proxy<T>(handler: ProxyHandler, path: string[] = []): T {
   const proxyInstance = new Proxy(function () { }, {
-    get(_, prop: string | number, receiver: any): any {
+    get(_, prop: PropName, receiver: any): any {
       if (prop === 'then') {
         if (path.length === 0) {
           return { then: () => receiver };
@@ -31,7 +30,7 @@ function proxy<T>(handler: ProxyHandler, path: string[] = []): T {
       }
       return proxy(handler, path.concat(`${prop}`));
     },
-    set(_, prop: string | number, value: any): boolean {
+    set(_, prop: PropName, value: any): boolean {
       handler({
         type: 'SET',
         path: path.concat(`${prop}`),
@@ -50,10 +49,13 @@ function proxy<T>(handler: ProxyHandler, path: string[] = []): T {
   return proxyInstance as any as T;
 }
 
-function createHandler(target: JSEvalable<any>): ProxyHandler {
-  return async (request: NodeOp): Promise<any> => {
+function createHandler(canvasHandle: ElementHandle<HTMLCanvasElement>, proxyTarget?: JSEvalable<any>): ProxyHandler {
+  return async (request: Op): Promise<any> => {
     try {
-      const result = await target.evaluate(async (jsTarget: any, type: OpType, path: string[], value: any, ...args: SerializableOrJSHandle[]) => {
+      const target = proxyTarget || canvasHandle;
+      console.log('ss', target, canvasHandle, request.type);
+      const result = await target.evaluate(async (jsTarget: any, canvasElement: HTMLCanvasElement, type: OpType, path: string[], value: any, ...args: SerializableOrJSHandle[]) => {
+        console.log({ jsTarget, canvasElement, type, path, value, args });
         const reducePath = (list: string[]) => list.reduce<any>((o: any, prop) => (o ? o[prop] : o), jsTarget);
         const ref = reducePath(path);
         const refParent = reducePath(path.slice(0, -1));
@@ -71,20 +73,36 @@ function createHandler(target: JSEvalable<any>): ProxyHandler {
           case 'APPLY':
             out = await ref.apply(refParent, args);
         }
+
         if (typeof out === 'object') {
-          (self as any).$canvasProxyDeferredResult = out;
-          out = '_defer_';
-        } else {
-          (self as any).$canvasProxyDeferredResult = undefined;
+          const cw = self as any as CanvasWindow;
+          const refMap = cw.$puppetCanvasMap.get(canvasElement);
+          if (refMap) {
+            const refId = `${Date.now()}-${Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)}`;
+            refMap.set(refId, out);
+            const defref: DeferredReference = {
+              id: refId,
+              type: '_deferred_'
+            };
+            out = defref;
+          } else {
+            throw new Error('Canvas element not initialized as puppet-canvas');
+          }
         }
         return out;
-      }, request.type, request.path || [], request.value, ...(request.args || []));
+      }, canvasHandle, request.type, request.path || [], request.value, ...(request.args || []));
 
-      if (result === '_defer_') {
-        const jsHandle = await target.evaluateHandle(() => {
-          return (self as any).$canvasProxyDeferredResult || null;
-        });
-        return jsHandle ? proxy(createHandler(jsHandle)) : null;
+
+      if ((typeof result === 'object') && (result as DeferredReference).type === '_deferred_') {
+        const deferredHandle = await target.evaluateHandle((_, canvasElement: HTMLCanvasElement, refId: string) => {
+          const cw = self as any as CanvasWindow;
+          const refMap = cw.$puppetCanvasMap.get(canvasElement);
+          if (refMap) {
+            refMap.get(refId);
+          }
+          return null;
+        }, canvasHandle, (result as DeferredReference).id);
+        return deferredHandle ? proxy(createHandler(canvasHandle, deferredHandle)) : null;
       }
       return result;
     } catch (err) {
@@ -112,9 +130,25 @@ export async function createCanvas(width: number, height: number): Promise<HTMLC
   if (!canvasElement) {
     throw new Error('Failed to initialize canvas in puppeteer');
   }
+  await page.evaluate((canvas) => {
+    const cw = self as any as CanvasWindow;
+    if (!cw.$puppetCanvasMap) {
+      cw.$puppetCanvasMap = new Map();
+    }
+    if (!cw.$puppetCanvasMap.has(canvas)) {
+      cw.$puppetCanvasMap.set(canvas, new Map());
+    }
+  }, canvasElement);
   return proxy<HTMLCanvasElement>(createHandler(canvasElement));
 }
 
+let _browser: Browser | null = null;
+async function getBrowser(): Promise<Browser> {
+  if (!_browser) {
+    _browser = await puppeteer.launch({ headless: false });
+  }
+  return _browser;
+}
 export async function close(): Promise<void> {
   if (_browser) {
     await _browser.close();
