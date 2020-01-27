@@ -1,5 +1,5 @@
 # puppet-canvas
-
+<img alt="puppet-canvas logo" src="https://user-images.githubusercontent.com/833927/73148934-a7de4580-4073-11ea-9956-f88bb8355d8f.png" height="200" align="right">
 puppet-canvas is a [Puppeteer](https://github.com/puppeteer/puppeteer) backed implementation of HTML Canvas API for NodeJS. 
 
 ## Installation
@@ -39,6 +39,7 @@ await close();
 
 })();
 ```
+![house image](https://user-images.githubusercontent.com/833927/73148753-c263ef00-4072-11ea-923c-2ec0f1c0306c.png)
 
 ### Using images
 
