@@ -66,6 +66,24 @@ ctx.fillStyle = gradient;
 ctx.fillRect(20, 20, 200, 100);
 ```
 
+### Using custom fonts
+When using a custom font for rendering text, you can ensure the font is loaded by calling the `loadFont` methods. 
+
+```javascript
+import { createCanvas, loadFont } from 'puppet-canvas';
+
+const canvas = await createCanvas(400, 400);
+const ctx = await canvas.getContext('2d');
+
+await loadFont(
+  'Bangers',
+  'https://fonts.gstatic.com/s/bangers/v12/FeVQS0BTqb0h60ACH55Q2J5hm24.woff2',
+  canvas
+);
+ctx.font = `bold 48px Bangers`;
+ctx.fillText('Hello world', 50, 100);
+```
+
 ## Implementation
 **puppet-canvas** creates a canvas on a puppeteer instance, and exposes the API via a JavaScript Proxy. 
 
@@ -107,6 +125,12 @@ Release the canvas instance, if you do not want puppet-canvas to proxy it anymor
 
 #### screenshotCanvas(canvas: HTMLCanvasElement, options?: ScreenshotOptions) => Promise<string | Buffer>
 Take a screenshot of the canvas. The method optionally takes in `ScreenshotOptions` which are the same options as described in [Puppeteer screenshot method](https://pptr.dev/#?product=Puppeteer&version=v2.0.0&show=api-pagescreenshotoptions)
+
+#### loadFont(name: string, url: string, canvas: HTMLCanvasElement) => Promise
+Load a font for the canvas element to use. **name** is the `font-family` name of the font. **url** is the url to the font file (like a `woff` file)
+
+#### loadImage(url: string, canvas: HTMLCanvasElement, page?: Page) => Promise\<HTMLImageElement\>
+Load an image from a URL that could be used by the canvas, e.g. for drawing the image on the canvas. 
 
 
 ## License
