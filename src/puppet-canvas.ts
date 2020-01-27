@@ -75,7 +75,7 @@ function createParamRef(param: any): any {
 function createHandler(canvasHandle: ElementHandle<HTMLCanvasElement>, proxyTarget?: JSEvalable<any>): ProxyHandler {
   return async (request: Op): Promise<any> => {
     try {
-      // if any of the request args or values are proxied, replace them by handles
+      // if any of the request args or values are proxied, replace them by their handles
       if (request.value) {
         request.value = createParamRef(request.value);
       }
@@ -88,7 +88,7 @@ function createHandler(canvasHandle: ElementHandle<HTMLCanvasElement>, proxyTarg
       // Execute in browser
       const target = proxyTarget || canvasHandle;
       const result = await target.evaluate(async (jsTarget: any, canvasElement: HTMLCanvasElement, type: OpType, path: PropName[], value: any, ...args: SerializableOrJSHandle[]) => {
-        // deref params
+        // de-ref params
         const derefArg = (arg: any) => {
           if (arg && (typeof arg === 'object') && (arg as DeferredReference).type === '_deferred_') {
             const cw = self as any as CanvasWindow;
