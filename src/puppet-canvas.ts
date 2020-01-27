@@ -1,5 +1,5 @@
 import { JSEvalable, SerializableOrJSHandle, ElementHandle, JSHandle, Page, ScreenshotOptions } from 'puppeteer';
-import { getBrowser, closeBrowser } from './brwoser';
+import { getBrowser, closeBrowser } from './browser';
 
 type PropName = string | number;
 
