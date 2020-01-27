@@ -1,7 +1,7 @@
 {
   "name": "puppet-canvas",
   "version": "0.1.0",
-  "description": "HTML5 Canvas API for node",
+  "description": "HTML5 Canvas implementation for NodeJS backed by puppeteer",
   "main": "bin/puppet-canvas.js",
   "types": "bin/puppet-canvas.d.ts",
   "scripts": {
