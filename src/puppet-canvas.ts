@@ -236,6 +236,21 @@ export async function close(): Promise<void> {
   return closeBrowser();
 }
 
+export async function loadFont(name: string, url: string, canvas: HTMLCanvasElement): Promise<void> {
+  const cachedRecord = proxyMap.get(canvas);
+  if (cachedRecord) {
+    await cachedRecord.canvasHandle.evaluate(async (_, fontName: string, fontUrl: string) => {
+      console.log('ff', fontName, fontUrl);
+      //@ts-ignore
+      const ff = new FontFace(fontName, `url(${fontUrl})`);
+      await ff.load();
+      (document as any).fonts.add(ff);
+    }, name, url);
+  } else {
+    throw new Error('Canvas element not initialized as puppet-canvas');
+  }
+}
+
 export async function loadImage(url: string, canvas: HTMLCanvasElement, page?: Page): Promise<HTMLImageElement> {
   const cachedRecord = proxyMap.get(canvas);
   const pageToUse = (cachedRecord && cachedRecord.page) || page;
