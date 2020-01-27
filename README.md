@@ -1,7 +1,7 @@
-<img alt="puppet-canvas logo" src="https://user-images.githubusercontent.com/833927/73148934-a7de4580-4073-11ea-9956-f88bb8355d8f.png" height="200" align="right">
-
 # puppet-canvas
 puppet-canvas is a [Puppeteer](https://github.com/puppeteer/puppeteer) backed implementation of HTML Canvas API for NodeJS. 
+
+<img alt="puppet-canvas logo" src="https://user-images.githubusercontent.com/833927/73148934-a7de4580-4073-11ea-9956-f88bb8355d8f.png" height="200" align="right">
 
 ## Installation
 
