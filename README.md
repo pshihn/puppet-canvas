@@ -107,6 +107,12 @@ const imageData = await ctx.createImageData(10, 10);
 const imageDataLength = await (await imageData.data).length;
 ```
 
+#### Why don't I just use puppeteer
+
+Yes, you can and for some cases it may even be a better dev experience. 
+
+**puppet-canvas** provides a simple abstraction layer so you don't have to jump in and out of Puppeteer's execution context all the time. You treat the canvas very similar to canvas on the web, and not worry much about anything else.
+
 ## Full API
 
 #### createCanvas(width: number, height: number) => Promise\<HTMLCanvasElement\>
