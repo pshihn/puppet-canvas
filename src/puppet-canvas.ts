@@ -1,4 +1,4 @@
-import { JSEvalable, SerializableOrJSHandle, ElementHandle, JSHandle, Page, ScreenshotOptions } from 'puppeteer';
+import { JSEvalable, SerializableOrJSHandle, ElementHandle, JSHandle, Page, ScreenshotOptions, Browser } from 'puppeteer';
 import { getBrowser, closeBrowser } from './browser';
 
 type PropName = string | number;
@@ -173,9 +173,11 @@ export async function linkCanvas(canvas: ElementHandle<HTMLCanvasElement>): Prom
   return initializeCanvas(canvas);
 }
 
-export async function createCanvas(width: number, height: number): Promise<HTMLCanvasElement> {
+export async function createCanvas(width: number, height: number, browser?: Browser): Promise<HTMLCanvasElement> {
   const html = `<canvas width="${width}" height="${height}"></canvas>`;
-  const browser = await getBrowser();
+  if (!browser) {
+    browser = await getBrowser();
+  }
   const page = await browser.newPage();
   await page.setContent(html);
   const canvasElement: ElementHandle<HTMLCanvasElement> | null = await page.$('canvas');
