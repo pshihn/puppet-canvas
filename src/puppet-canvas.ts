@@ -1,7 +1,7 @@
-import { JSEvalable, SerializableOrJSHandle, ElementHandle, JSHandle, Page, ScreenshotOptions, Browser } from 'puppeteer';
+import { ElementHandle, JSHandle, Page, ScreenshotOptions, Browser } from 'puppeteer';
 import { getBrowser, closeBrowser } from './browser';
 
-type PropName = string | number;
+type PropName = string | symbol;
 
 type OpType = 'GET' | 'SET' | 'APPLY';
 
@@ -11,7 +11,7 @@ interface Op {
   type: OpType;
   path?: PropName[];
   value?: any;
-  args?: SerializableOrJSHandle[];
+  args?: any[];
 }
 
 type ProxyHandler = (message: Op) => Promise<any>;
@@ -40,12 +40,12 @@ function proxy<T>(handler: ProxyHandler, path: string[] = [], refId?: string): T
         const getter = handler({ type: 'GET', path });
         return getter.then.bind(getter);
       }
-      return proxy(handler, path.concat(`${prop}`));
+      return proxy(handler, path.concat(`${String(prop)}`));
     },
     set(_, prop: PropName, value: any): boolean {
       handler({
         type: 'SET',
-        path: path.concat(`${prop}`),
+        path: path.concat(`${String(prop)}`),
         value
       });
       return true;
@@ -72,7 +72,7 @@ function createParamRef(param: any): any {
   return param;
 }
 
-function createHandler(canvasHandle: ElementHandle<HTMLCanvasElement>, proxyTarget?: JSEvalable<any>): ProxyHandler {
+function createHandler(canvasHandle: ElementHandle<HTMLCanvasElement>, proxyTarget?: JSHandle<any>): ProxyHandler {
   return async (request: Op): Promise<any> => {
     try {
       // if any of the request args or values are proxied, replace them by their handles
@@ -87,7 +87,7 @@ function createHandler(canvasHandle: ElementHandle<HTMLCanvasElement>, proxyTarg
 
       // Execute in browser
       const target = proxyTarget || canvasHandle;
-      const result = await target.evaluate(async (jsTarget: any, canvasElement: HTMLCanvasElement, type: OpType, path: PropName[], value: any, ...args: SerializableOrJSHandle[]) => {
+      const result = await target.evaluate(async (jsTarget: any, canvasElement: HTMLCanvasElement, type: OpType, path: PropName[], value: any, ...args: any[]) => {
         // de-ref params
         const derefArg = (arg: any) => {
           if (arg && (typeof arg === 'object') && (arg as DeferredReference).type === '_deferred_') {
